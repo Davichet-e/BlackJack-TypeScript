@@ -10,5 +10,8 @@ You need to have installed TypeScript compiler (<a href="https://www.typescriptl
 # Run it
 To run this application, run `tsc && node BlackJack.js` in your terminal
 
+# Bugs
+For unknown reasons, sometimes this error`TypeError: Cannot read property '_aces' of undefined` occur, just run it again until it works
+
 # Shoutouts
 This implementation would not have been possible without <a href="https://www.npmjs.com/package/readline-sync">readline-sync</a> package of @anseki
