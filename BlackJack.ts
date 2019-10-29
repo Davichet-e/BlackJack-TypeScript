@@ -1,18 +1,33 @@
-import { BlackJackPlayer } from "./BlackJackPlayer";
-import { BlackJackHand } from "./Hand";
+import { Player } from "./Player";
+import { Hand } from "./Hand";
 
-const readLineSync = require("readline-sync");
+import readLineSync = require("readline-sync");
+import { Deck } from "./Deck";
 
-let players: Array<BlackJackPlayer> = [];
-const dealerHand: BlackJackHand = new BlackJackHand();
+let deck: Deck;
+let players: Array<Player> = [];
+let dealerHand: Hand;
 
-export function blackJack() {
+function blackJack() {
+  console.log("This BlackJack Game has been created by David Garcia Morillo");
+  let nOfDecks: number;
+  while (true) {
+    nOfDecks = readLineSync.questionInt(
+      "How many decks do you want to use (4-8)\n> ",
+      { limitMessage: "Please, use only integral values" }
+    );
+    if (nOfDecks <= 3 || nOfDecks > 8)
+      console.log("The number of decks must be between 4 and 8\n");
+    else break;
+  }
+
+  deck = new Deck(nOfDecks);
+  dealerHand = new Hand(deck);
+
   startGame();
   while (true) {
     // TODO console.log("Game Started")
-    console.log(
-      `\t\t\t\tThe first card of the dealer is ${dealerHand.cards[0]}`
-    );
+    console.log(`The first card of the dealer is ${dealerHand.cards[0]}`);
 
     players.forEach(playerTurn);
 
@@ -23,157 +38,227 @@ export function blackJack() {
   // rl.close();
 }
 
-export function startGame() {
-  console.log(
-    "\t\t\t\tThis BlackJack Game has been created by David Garcia Morillo"
-  );
+function startGame() {
   const numberOfPeople: number = askNumberOfPeople();
   askAndSetPlayerAttributes(numberOfPeople);
 }
 
-export function askNumberOfPeople(): number {
+function askNumberOfPeople(): number {
   let numberOfPeople: number;
   while (true) {
     numberOfPeople = readLineSync.questionInt(
-      "\t\t\t\tHow many people are going to play? (1-5)\n\t\t\t\t",
-      { limitMessage: "\t\t\t\tPlease, use only integral values" }
+      "How many people are going to play? (1-5)\n> ",
+      { limitMessage: "Please, use only integral values" }
     );
 
     if (!(0 < numberOfPeople && numberOfPeople <= 5))
-      console.log("\t\t\t\tThe number of people must be between 1 and 5\n");
+      console.log("The number of people must be between 1 and 5\n");
     else break;
   }
 
   return numberOfPeople;
 }
 
-export function askAndSetPlayerAttributes(numberOfPeople: number) {
-  for (let i = 0; i < numberOfPeople; i++) {
+function askAndSetPlayerAttributes(numberOfPeople: number) {
+  for (let i = 1; i < numberOfPeople + 1; i++) {
     const name: string = readLineSync.question(
-      `\t\t\t\tPlease, enter your name, Player ${i + 1}\n\t\t\t\t`
+      `Please, enter your name, Player ${i}\n> `
     );
-    let initialMoney: number;
     while (true) {
-      initialMoney = readLineSync.questionInt(
-        "\n\t\t\t\tHow much money do you have? (Use only integral values)\n\t\t\t\t",
-        { limitMessage: "\t\t\t\tPlease, use only integral values" }
+      const initialMoney: number = readLineSync.questionInt(
+        "\nHow much money do you have? (Use only integral values)\n> ",
+        { limitMessage: "Please, use only integral values.\n" }
       );
 
       if (initialMoney < 50)
-        console.log(
-          "\t\t\t\tThe initial money must be greater or equal than 50\n"
-        );
+        console.log("The initial money must be greater or equal than 50\n");
       else {
-        players.push(new BlackJackPlayer(name, initialMoney));
+        players.push(new Player(name, initialMoney, deck));
         break;
       }
     }
   }
 }
 
-export function askPlayerBet(player: BlackJackPlayer) {
-  let bet: number;
+function askPlayerBet(player: Player) {
   while (true) {
-    bet = readLineSync.questionInt(
-      "\t\t\t\tWhat bet do you wanna make?\n\t\t\t\t",
-      { limitMessage: "\t\t\t\tPlease, use only integral values" }
-    );
+    const bet = readLineSync.questionInt("What bet do you wanna make?\n> ", {
+      limitMessage: "Please, use only integral values"
+    });
     if (bet > player.actualMoney)
-      console.log(
-        "\t\t\t\tYour bet cannot be greater than your actual money.\n"
-      );
-    else if (bet <= 0)
-      console.log("\t\t\t\tYour bet must be greater than 0.\n");
+      console.log("Your bet cannot be greater than your actual money.\n");
+    else if (bet <= 0) console.log("Your bet must be greater than 0.\n");
     else {
-      player.actualBet = bet;
+      player.bet = bet;
       break;
     }
   }
 }
 
-export function playerWinOrLose(player: BlackJackPlayer): boolean {
+function playerWinOrLose(hand: Hand): boolean {
   let result: boolean = false;
-  const playerPoints = player.hand.points;
+  const playerPoints = hand.points;
   if (playerPoints === 21) {
-    console.log("\t\t\t\tBLACKJACK");
+    if (hand.hasBlackJack()) console.log("BLACKJACK!");
+    else console.log("YOU GOT 21 POINTS!");
+
     result = true;
   } else if (playerPoints === 0) {
-    console.log("\t\t\t\tBUST.\n\t\t\t\tI'm afraid you lose this game :(\n");
+    console.log("BUST.\nI'm afraid you lose this game :(\n");
     result = true;
   }
   return result;
 }
 
-export const checkIfYes = (userDecision: string): boolean =>
+const checkIfYes = (userDecision: string): boolean =>
   ["y", "yes", "1", "true"].includes(userDecision.trim().toLowerCase());
 
-export function askIfHit(): boolean {
-  const decision: string = readLineSync.question(
-    "\t\t\t\tDo you wanna hit?\n\t\t\t\t"
-  );
+function askPlayerAction(): boolean {
+  const decision: string = readLineSync.question("What do you want to do?\n> ");
   return checkIfYes(decision);
 }
 
-export function playerTurn(player: BlackJackPlayer) {
-  //TODO console.log("player turn")
-  console.log(
-    `\t\t\t\t${player}, your actual money is ${player.actualMoney} €\n`
-  );
+function playerTurn(player: Player) {
+  console.log(`###### ${player}'s turn ######\n`);
+  console.log(`${player}, your actual money is ${player.actualMoney} €\n`);
 
   askPlayerBet(player);
 
-  console.log("\n\t\t\t\tYour cards are: ");
-  console.log(`\t\t\t\t${player.hand.cards[0]} and ${player.hand.cards[1]}\n`);
+  console.log("\nYour cards are: ");
+  console.log(
+    `${player.hands[0].cards[0]} and ${player.hands[0].cards[1]} (${player.hands[0].points} points)\n`
+  );
 
-  while (!playerWinOrLose(player)) {
-    if (askIfHit()) {
-      player.hand.dealCard();
-      console.log(`\t\t\t\tNow, your cards are: ${player.hand}`);
-    } else {
-      console.log(`\t\t\t\t${player} stood`);
-      break;
+  let hasSplitted = false;
+  let hasDoubled = false;
+  for (const [i, hand] of player.hands.entries()) {
+    // If the player has doubled, he can only hit one more time
+    while (!playerWinOrLose(hand) && (!hasDoubled || hand.cards.length < 3)) {
+      if (hasSplitted) {
+        console.log(`(Hand #${i})`);
+        console.log(`Your cards are: ${hand}`);
+      }
+      const userDecision = readLineSync
+        .question(
+          "\nWhat do you want to do?\nAvailable Commands: (h)it, (s)tand, (sp)lit, (d)ouble, (surr)ender\n> "
+        )
+        .trim()
+        .toLowerCase();
+
+      let breaking = false;
+      switch (userDecision) {
+        case "h":
+        case "hit":
+          player.hit(i);
+          console.log(`Now, your cards are: ${hand}`);
+          break;
+
+        case "s":
+        case "stand":
+          console.log(`Player ${player} stood`);
+          breaking = true;
+          break;
+
+        case "sp":
+        case "split":
+          if (!hasDoubled) {
+            const errorMessage: string | undefined = player.split();
+            if (errorMessage) console.log(errorMessage);
+            else {
+              hasSplitted = true;
+              console.log("You have splitted the hand!");
+            }
+          } else
+            console.log("You cannot split because you have already doubled");
+          break;
+
+        case "d":
+        case "doubled":
+          if (!hasDoubled) {
+            const errorMessage: string | undefined = player.double();
+            if (errorMessage) console.log(errorMessage);
+            else {
+              hasDoubled = true;
+              console.log("You have doubled the bet!");
+            }
+          } else
+            console.log("You cannot double because you have already doubled");
+          break;
+
+        case "surr":
+        case "surrender":
+          if (!hasDoubled) {
+            const errorMessage: string | undefined = player.surrender();
+            if (errorMessage) console.log(errorMessage);
+            else {
+              hasDoubled = true;
+              console.log("You have surrendered!");
+              breaking = true;
+            }
+          } else
+            console.log(
+              "You cannot surrender because you have already doubled"
+            );
+          break;
+
+        default:
+          console.log(
+            "Invalid command!\nAvailable Commands: (h)it, (s)tand, (sp)lit, (d)ouble, (surr)ender"
+          );
+          break;
+      }
+      if (breaking) break;
     }
   }
 }
 
-export function dealerLost(): boolean {
+function dealerLost(): boolean {
   if (dealerHand.points === 0) {
-    console.log("\t\t\t\tThe dealer busted. The game ended :)\n");
+    console.log("The dealer busted. The game ended :)\n");
     return true;
   }
   return false;
 }
 
-export function dealerTurn() {
-  // TODO console.log(Dealer's turn);
+function dealerTurn() {
+  console.log("###### Dealer's Turn ######\n");
   console.log(
-    `\t\t\t\tThe dealer's cards are ${dealerHand.cards[0]} and ${dealerHand.cards[1]}\n`
+    `The dealer's cards are ${dealerHand.cards[0]} and ${dealerHand.cards[1]}\n`
   );
 
   while (!dealerLost() && dealerHand.points < 17) {
-    console.log("\t\t\t\tThe dealer is going to hit a card\n");
+    console.log("The dealer is going to hit a card\n");
     dealerHand.dealCard();
-    console.log(`\t\t\t\tNow, the dealer's cards are: ${dealerHand}`);
+    console.log(`Now, the dealer's cards are: ${dealerHand}`);
   }
 }
 
-export function endGame() {
+function endGame() {
   // TODO console.log(results)
-  players.forEach(player => {
-    if (player.hand.points === 21 || player.hand.points > dealerHand.points) {
-      player.actualMoney += player.actualBet;
-      console.log(`\t\t\t\t${player} won ${player.actualBet * 2}€ :)\n`);
-    } else if (
-      player.hand.points === 0 ||
-      player.hand.points < dealerHand.points
-    ) {
-      player.actualMoney -= player.actualBet;
-      console.log(`\t\t\t\t${player} lost against the dealer :(\n`);
-    } else console.log(`\t\t\t\t${player}, it is a tie! :|\n`);
-  });
+  const dealerPoints = dealerHand.points;
+
+  for (const player of players) {
+    for (const [i, hand] of player.hands.entries()) {
+      const handPoints: number = hand.points;
+      if (
+        handPoints > dealerHand.points ||
+        (hand.hasBlackJack() && dealerHand.hasBlackJack())
+      ) {
+        const moneyEarned: number = player.win();
+
+        let handSpecification: string =
+          player.hands.length === 1 ? "" : ` (#${i + 1} hand)`;
+
+        console.log(`${player}${handSpecification} won ${moneyEarned}€ :)\n`);
+      } else if (handPoints === 0 || handPoints < dealerHand.points) {
+        player.lose();
+        console.log(`${player} lost against the dealer :(\n`);
+      } else console.log(`${player}, it is a tie! :|\n`);
+    }
+  }
 }
 
-export function askIfReset(player: BlackJackPlayer): boolean {
+function askIfReset(player: Player): boolean {
   let playerResets: boolean = false;
   let finalBalance: string = `${player.actualMoney - player.initialMoney} €`;
 
@@ -181,26 +266,26 @@ export function askIfReset(player: BlackJackPlayer): boolean {
 
   if (player.actualMoney > 0) {
     const decision: string = readLineSync.question(
-      `\t\t\t\t${player}, do you want to play again? (y/n)\n\t\t\t\t`
+      `${player}, do you want to play again? (y/n)\n> `
     );
 
     if (checkIfYes(decision)) {
-      player.hand.initializeAttributes();
+      player.resetHands();
       playerResets = true;
     } else {
       console.log(
-        `\t\t\t\tThanks for playing, ${player}. Your final balance is ${finalBalance}\n`
+        `Thanks for playing, ${player}. Your final balance is ${finalBalance}\n`
       );
     }
   } else {
     console.log(
-      `\t\t\t\t${player}, you have lost all your money. Thanks for playing\n`
+      `${player}, you have lost all your money. Thanks for playing\n`
     );
   }
   return playerResets;
 }
 
-export function nextGame(): boolean {
+function nextGame(): boolean {
   // TODO console.log(game finished)
   players = players.filter(askIfReset);
 

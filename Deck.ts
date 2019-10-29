@@ -33,12 +33,15 @@ export class Deck {
     KING: 10
   };
 
-  private readonly _deck: Array<Card> = [];
+  private readonly _deck: Array<Card>;
 
-  constructor() {
-    for (const suit of Deck.suits) {
-      for (const [cardName, cardValue] of Object.entries(Deck.cards)) {
-        this._deck.push(new Card(cardName, cardValue, suit));
+  constructor(nDecks: number) {
+    this._deck = [];
+    for (let i = 0; i < nDecks; i++) {
+      for (const suit of Deck.suits) {
+        for (const [cardName, cardValue] of Object.entries(Deck.cards)) {
+          this._deck.push(new Card(cardName, cardValue, suit));
+        }
       }
     }
     shuffle(this._deck);
